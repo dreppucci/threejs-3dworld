@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Armani XMAS</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="user-scalable=no, initial-scale=1">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				color: #ffffff;
+				padding: 5px;
+				font-family:Monospace;
+				font-size:13px;
+				font-weight: bold;
+				text-align:center;
+			}
+
+			a {
+				color: #ff8800;
+			}
+			.text-label {
+				color: #fff;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+
+		<script src="http://threejs.org/build/three.js"></script>
+		<script src="http://threejs.org/examples/js/controls/DeviceOrientationControls.js"></script>
+		<script src="http://threejs.org/examples/js/controls/OrbitControls.js"></script>
+		<script src="http://threejs.org/examples/js/Detector.js"></script>
+		<script src="http://threejs.org/examples/js/libs/stats.min.js"></script>
+		<script src="http://threejs.org/examples/js/libs/tween.min.js"></script>
+
+		<script>
+			var raycaster, mouse, renderer, container, camera, scene, renderer, controls, geometry, mesh, stats;
+			var cylinders = new Array();
+			var worlds = new Array();
+			var textlabels = new Array();
+			(function() {
+				  "use strict";
+
+				  window.addEventListener('load', function() {
+
+						var animate = function(){
+
+							window.requestAnimationFrame( animate );
+
+							TWEEN.update();
+							controls.update();
+							//stats.update();
+							renderer.render(scene, camera);
+
+							for( var i = 0, cylindersLength = cylinders.length; i < cylindersLength; i++ ) {
+								rotateCylinder(cylinders[i]);
+							}
+							for( var i = 0, worldsLength = worlds.length; i < worldsLength; i++ ) {
+								moveWorlds(worlds[i]);
+							}
+							for(var i=0; i<textlabels.length; i++) {
+						      textlabels[i].updatePosition();
+						    }
+
+						};
+
+						container = document.getElementById( 'container' );
+
+						scene = new THREE.Scene();
+						scene.fog = new THREE.FogExp2( 0xcccccc, 0.0009 );
+
+						camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+						camera.position.z = 1;
+
+						renderer = new THREE.WebGLRenderer();
+						renderer.setPixelRatio( window.devicePixelRatio );
+						renderer.setSize(window.innerWidth, window.innerHeight);
+						//renderer.domElement.style.position = 'absolute';
+						//renderer.domElement.style.top = 0;
+
+						controls = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? new THREE.DeviceOrientationControls( camera ) : new THREE.OrbitControls( camera, renderer.domElement );
+						controls.enableDamping = true;
+						controls.dampingFactor = 1;
+						controls.enableZoom = true;
+					    controls.enablePan = false;
+					    controls.enableKeys = false;
+
+						var geometry = new THREE.SphereGeometry( 500, 32, 32 );
+						geometry.scale( -1, 1, 1 );
+						var texture = new THREE.TextureLoader().load( 'star.jpg' );
+						texture.magFilter = THREE.NearestFilter;
+						texture.minFilter = THREE.LinearMipMapLinearFilter;
+
+						var material = new THREE.MeshBasicMaterial({
+							//map: texture
+							color: 0xffffff
+						});
+
+						var mesh = new THREE.Mesh( geometry, material );
+						//scene.add( mesh );
+
+						// LIGHT
+						var light = new THREE.PointLight(0xffffff);
+						light.position.set(0,250,0);
+						scene.add(light);
+
+						var geometry2 = new THREE.BoxGeometry( 10, 10, 10 );
+
+				for ( var i = 1; i < 7; i ++ ) {
+					var customMaterial = new THREE.MeshBasicMaterial( {
+						wireframeLinewidth: 3,
+						color: 0xffffff
+					} );
+					var object = new THREE.Mesh( geometry2, customMaterial );
+					var box = new THREE.BoxHelper( object, 0xffffff );
+					box.material.linewidth = 5;
+
+					var percentAngle = 360/5,
+						circularAngle = percentAngle*i,
+						positionX = 40*Math.cos(i) + 0,
+						positionZ = 40*Math.sin(i) + 0;
+					box.position.x = positionX;
+					box.position.z = positionZ;
+					box.position.y = 0;
+					box.rotation.x = Math.random() * 2 * Math.PI;
+					box.rotation.y = Math.random() * 2 * Math.PI;
+					box.rotation.z = Math.random() * 2 * Math.PI;
+					box.name = 'world-'+i;
+					box.positionstate = 'up';
+
+					var text = _createTextLabel();
+					text.setHTML(box.name);
+					text.setParent(box);
+					textlabels.push(text);
+					container.appendChild(text.element);
+					worlds.push(box);
+					//scene.add( object );
+					scene.add( box );
+					/*var ciccio = new THREE.TextGeometry('ciao', { font: 'helvetiker', size: 24, height: 2 })
+					ciccio.position.y = -10;
+					ciccio.position.x = positionX;
+					ciccio.position.z = positionZ;
+					scene.add(ciccio);*/
+
+				}
+				for ( var i = 0; i < 1000; i ++ ) {
+					var colorRandom = Math.round( randomNumberInRange(255, 50) );
+					var material3 = new THREE.MeshBasicMaterial({ color: "rgb("+colorRandom+" , "+colorRandom+", "+colorRandom+")" });
+					var geometry3 = Math.floor((Math.random() * 2) - 0) === 0 ? new THREE.CylinderGeometry( 0, (Math.random() * 2) - 0, 3, 3 ) : Math.floor((Math.random() * 2) - 0) === 0 ? new THREE.SphereGeometry( (Math.random() * 2) - 0, 32, 32 ) : new THREE.BoxGeometry( (Math.random() * 2) - 0, (Math.random() * 2) - 0, (Math.random() * 2) - 0 );
+					geometry3.rotateX( Math.PI / 4 );
+					var mesh3 = new THREE.Mesh( geometry3, material3 );
+					mesh3.position.x = randomNumberInRange(2000, -1000);
+					mesh3.position.y = Math.random() * 2000 - 1000;
+					mesh3.position.z = randomNumberInRange(2000, -1000);
+					mesh3.scale.x = mesh3.scale.y = mesh3.scale.z = Math.random() * 4 + 2;
+					scene.add( mesh3 );
+					cylinders.push(mesh3);
+				}
+
+				raycaster = new THREE.Raycaster();
+				mouse = new THREE.Vector2();
+
+						container.appendChild(renderer.domElement);
+						//stats = new Stats();
+						//container.appendChild( stats.dom );
+
+						window.addEventListener('resize', function() {
+
+							camera.aspect = window.innerWidth / window.innerHeight;
+							camera.updateProjectionMatrix();
+							renderer.setSize( window.innerWidth, window.innerHeight );
+
+						}, false);
+
+						document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+
+						animate();
+
+				  }, false);
+
+				  function onDocumentTouchStart( event ) {
+				
+				event.preventDefault();
+				
+				event.clientX = event.touches[0].clientX;
+				event.clientY = event.touches[0].clientY;
+				onDocumentMouseDown( event );
+
+			}
+
+			function randomNumberInRange( max, min ) {
+				return Math.random() * (max - min) + min;
+			}
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+				raycaster.setFromCamera( mouse, camera );
+				var boxes = new Array();
+				for(var i = 1, boxLength = scene.children.length; i < boxLength; i++) {
+					boxes.push(scene.children[i]);
+				}
+				var intersects = raycaster.intersectObjects( boxes );
+
+				if ( intersects.length > 0 ) {
+					alert(intersects[0].object.name);
+//new TWEEN.Tween( camera.position ).to( { z: 100 }, 2000 ).easing( TWEEN.Easing.Quintic.InOut).start();
+
+					/*new TWEEN.Tween( intersects[ 0 ].object.position ).to( {
+						x: Math.random() * 800 - 400,
+						y: Math.random() * 800 - 400,
+						z: Math.random() * 800 - 400 }, 2000 )
+					.easing( TWEEN.Easing.Quintic.InOut).start();
+
+					new TWEEN.Tween( intersects[ 0 ].object.rotation ).to( {
+						x: Math.random() * 2 * Math.PI,
+						y: Math.random() * 2 * Math.PI,
+						z: Math.random() * 2 * Math.PI }, 2000 )
+					.easing( TWEEN.Easing.Quintic.InOut).start();*/
+
+				}
+			}
+
+			function rotateCylinder(object) {
+				object.rotation.x += (Math.random() * 0.01) - 0.02;
+				object.rotation.y += (Math.random() * 0.01) - 0.02;
+				object.position.x += (Math.random() * 0.001) - 0.001;
+				object.position.y += (Math.random() * 0.001) - 0.001;
+			}
+
+			function moveWorlds(object) {
+				var objectState;
+
+				if ( object.positionstate === 'up' ) {
+					if ( object.position.y < 1 ) objectState = 'up'
+					if ( object.position.y >= 1 ) objectState = 'down'
+				}
+				if ( object.positionstate === 'down' ) {
+					if (object.position.y <= -1 ) objectState = 'up'
+					if ( object.position.y > -1 ) objectState = 'down'
+				}
+				object.positionstate = objectState;
+
+var moveY = object.positionstate === 'up' ? object.position.y+(Math.random() * 0.02) - 0 : object.position.y-(Math.random() * 0.02) - 0;
+				object.position.y = moveY;
+			}
+
+			function _createTextLabel() {
+			    var div = document.createElement('div');
+			    div.className = 'text-label';
+			    div.style.position = 'absolute';
+			    div.style.width = 100;
+			    div.style.height = 100;
+			    div.innerHTML = "hi there!";
+			    div.style.top = -1000;
+			    div.style.left = -1000;
+
+			    var _this = this;
+			    
+			    return {
+			      element: div,
+			      parent: false,
+			      position: new THREE.Vector3(0,0,0),
+			      setHTML: function(html) {
+			        this.element.innerHTML = html;
+			      },
+			      setParent: function(threejsobj) {
+			        this.parent = threejsobj;
+			      },
+			      updatePosition: function() {
+			        if(parent) {
+			          this.position.copy(this.parent.position);
+			        }
+			        
+			        var coords2d = this.get2DCoords(this.position, camera);
+			        this.element.style.left = coords2d.x + 'px';
+			        this.element.style.top = coords2d.y + 'px';
+			      },
+			      get2DCoords: function(position, camera) {
+			        var vector = position.project(camera);
+			        vector.x = (vector.x + 1)/2 * window.innerWidth <= 0 ? -200 : (vector.x + 1)/2 * window.innerWidth;
+			        vector.y = -(vector.y - 1)/2 * window.innerHeight;
+			        return vector;
+			      }
+			    }
+			}
+
+			})();
+		</script>
+		<script id="vertexShader" type="x-shader/x-vertex">
+uniform vec3 viewVector;
+uniform float c;
+uniform float p;
+varying float intensity;
+void main() 
+{
+    vec3 vNormal = normalize( normalMatrix * normal );
+	vec3 vNormel = normalize( normalMatrix * viewVector );
+	intensity = pow( c - dot(vNormal, vNormel), p );
+	
+    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+</script>
+<script id="fragmentShader" type="x-shader/x-vertex"> 
+uniform vec3 glowColor;
+varying float intensity;
+void main() 
+{
+	vec3 glow = glowColor * intensity;
+    gl_FragColor = vec4( glow, 2.0 );
+}
+</script>
+	</body>
+</html>
